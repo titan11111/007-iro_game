@@ -68,6 +68,11 @@ function createColorElement(spirit) {
     const nameSpan = document.createElement('span');
     nameSpan.className = 'color-name';
     nameSpan.textContent = spirit.name;
+    
+    // 背景色の明度を計算して、テキストカラーを自動判定
+    const brightness = (spirit.rgb[0] * 299 + spirit.rgb[1] * 587 + spirit.rgb[2] * 114) / 1000;
+    nameSpan.style.color = brightness > 140 ? '#000000' : '#ffffff';
+    
     colorDiv.appendChild(nameSpan);
 
     // ドラッグイベント
