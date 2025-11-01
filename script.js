@@ -64,7 +64,6 @@ function createColorElement(spirit) {
     colorDiv.draggable = true;
     colorDiv.dataset.spiritId = spirit.id;
 
-    // 名前表示
     const nameSpan = document.createElement('span');
     nameSpan.className = 'color-name';
     nameSpan.textContent = spirit.name;
@@ -75,7 +74,6 @@ function createColorElement(spirit) {
     
     colorDiv.appendChild(nameSpan);
 
-    // ドラッグイベント
     colorDiv.addEventListener('dragstart', handleDragStart);
     colorDiv.addEventListener('click', handleColorClick);
 
