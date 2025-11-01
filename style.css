@@ -76,9 +76,10 @@ section h2 {
     cursor: grab;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    position: relative; /* 名前を配置するために追加 */
+    gap: 0;
 }
 
 .color-item:hover {
@@ -87,17 +88,15 @@ section h2 {
 }
 
 .color-name {
-    position: absolute;
-    bottom: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.75rem;
+    position: static;
+    transform: none;
+    font-size: 0.7rem;
     font-weight: bold;
-    color: white;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
-    white-space: nowrap;
+    white-space: normal;
     text-align: center;
-    width: 90%;
+    width: 85%;
+    line-height: 1.2;
 }
 
 
