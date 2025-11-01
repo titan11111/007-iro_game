@@ -9,8 +9,10 @@ const basicSpirits = [
     { name: "ビリジャン", rgb: [64, 130, 109], id: "viridian" },
     { name: "バーントアンバー", rgb: [130, 102, 68], id: "burnt_umber" },
     { name: "アリザリンクリムゾン", rgb: [227, 38, 54], id: "alizarin_crimson" },
-    { name: "コバルトブルー", rgb: [0, 71, 171], id: "cobalt_blue" }
-];
+    { name: "コバルトブルー", rgb: [0, 71, 171], id: "cobalt_blue" },
+    { name: "セルリアンブルー", rgb: [0, 150, 220], id: "cerulean_blue" },
+    { name: "レモンイエロー", rgb: [255, 248, 0], id: "lemon_yellow" },
+    { name: "イエローオーカー", rgb: [227, 171, 59], id: "yellow_ochre" }];
 
 // ゲーム状態管理
 let gameState = {
