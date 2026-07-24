@@ -1310,21 +1310,19 @@
         nameSpan.style.color = textColorForRgb(spirit.rgb);
         btn.appendChild(nameSpan);
 
-        /* iOSで touchend preventDefault により click が消える対策: pointerup を主、click は保険 */
+        /* 押した瞬間に反映（pointerup待ちだと遅く感じる） */
         let lastPickAt = 0;
-        const pick = () => {
+        const pick = (e) => {
+            if (e && e.button != null && e.button !== 0) return;
             const now = Date.now();
-            if (now - lastPickAt < 280) return;
+            if (now - lastPickAt < 80) return;
             lastPickAt = now;
             addSelectedColor(spirit);
         };
-        btn.addEventListener('pointerup', (e) => {
-            if (e.button != null && e.button !== 0) return;
-            pick();
-        });
+        btn.addEventListener('pointerdown', pick);
         btn.addEventListener('click', (e) => {
             e.preventDefault();
-            pick();
+            pick(e);
         });
 
         return btn;
@@ -1507,10 +1505,15 @@
         if (!gameState.selectedColors[0]) gameState.selectedColors[0] = spirit;
         else gameState.selectedColors[1] = spirit;
 
-        vibrate(12);
-        playColorPick(spirit.rgb);
+        /* UIを先に反映してから音（音で体感が遅くなるのを防ぐ） */
         updateMixingSlots();
         setStatus(`${spirit.name}をスロットへ`);
+        queueMicrotask(() => {
+            vibrate(12);
+            try {
+                playColorPick(spirit.rgb);
+            } catch (_) { /* ignore */ }
+        });
     }
 
     function clearSlot(index) {
@@ -1570,11 +1573,8 @@
         }
         el.spiritName.value = '';
         showModal(el.nameRitual);
-        requestAnimationFrame(() => {
-            try {
-                el.spiritName.focus({ preventScroll: true });
-            } catch (_) { /* ignore */ }
-        });
+        /* iOSはユーザーが入力枠を直接タップしないとキーボードが出ない */
+        setStatus('下の枠をタップして名前を入力');
     }
 
     function setupKeyboardAvoidance() {
@@ -1602,9 +1602,12 @@
     }
 
     function performMixing() {
+        if (performMixing._busy) return;
         const c1 = gameState.selectedColors[0];
         const c2 = gameState.selectedColors[1];
         if (!c1 || !c2) return;
+        performMixing._busy = true;
+        setTimeout(() => { performMixing._busy = false; }, 500);
 
         const mixedRgb = mixInOklch(c1.rgb, c2.rgb, 0.5);
         const newSpirit = {
@@ -1634,14 +1637,17 @@
     }
 
     function nameNewSpirit() {
+        if (nameNewSpirit._busy) return;
         const newName = el.spiritName.value.trim();
         if (!newName) {
             showToast('名前を入力してね');
             vibrate(20);
-            el.spiritName.focus();
+            try { el.spiritName.focus(); } catch (_) { /* ignore */ }
             return;
         }
         if (!gameState.currentMixResult) return;
+        nameNewSpirit._busy = true;
+        setTimeout(() => { nameNewSpirit._busy = false; }, 600);
 
         gameState.currentMixResult.name = newName;
         const named = { ...gameState.currentMixResult };
@@ -1693,13 +1699,13 @@
         document.addEventListener('gestureend', (e) => e.preventDefault());
 
         const blockDoubleTapZoom = (e) => {
-            /* touchend のみ。同一タップの start→end で click を潰さない */
-            const now = Date.now();
-            if (now - lastTouchEnd <= 300) {
-                const tag = e.target && e.target.tagName;
-                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-                e.preventDefault();
+            /* ボタン・入力・パレット上では何もしない（反応遅延の元凶） */
+            const t = e.target;
+            if (t && t.closest && t.closest('button, input, textarea, a, .spirit-item, .slot-unit, .name-card, .modal-overlay, .tab, .icon-btn')) {
+                return;
             }
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) e.preventDefault();
             lastTouchEnd = now;
         };
         document.addEventListener('touchend', blockDoubleTapZoom, { passive: false });
@@ -1763,13 +1769,53 @@
         document.addEventListener('pointercancel', () => { pointerSense.on = false; }, { passive: true });
         document.documentElement.addEventListener('mouseleave', () => { pointerSense.on = false; });
 
-        el.mixButton.addEventListener('click', performMixing);
-        el.clearSlots.addEventListener('click', () => {
+        el.mixButton.addEventListener('pointerdown', (e) => {
+            if (e.button != null && e.button !== 0) return;
+            if (el.mixButton.disabled) return;
+            performMixing();
+        });
+        el.mixButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (el.mixButton.disabled) return;
+            performMixing();
+        });
+        el.clearSlots.addEventListener('pointerdown', (e) => {
+            if (e.button != null && e.button !== 0) return;
             clearSelectedSlots();
             showToast('スロットを空にした');
         });
-        el.nameButton.addEventListener('click', nameNewSpirit);
-        el.nameCancel.addEventListener('click', cancelNaming);
+        el.clearSlots.addEventListener('click', (e) => {
+            e.preventDefault();
+            clearSelectedSlots();
+            showToast('スロットを空にした');
+        });
+        el.nameButton.addEventListener('pointerdown', (e) => {
+            if (e.button != null && e.button !== 0) return;
+            nameNewSpirit();
+        });
+        el.nameButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            nameNewSpirit();
+        });
+        el.nameCancel.addEventListener('pointerdown', (e) => {
+            if (e.button != null && e.button !== 0) return;
+            cancelNaming();
+        });
+        el.nameCancel.addEventListener('click', (e) => {
+            e.preventDefault();
+            cancelNaming();
+        });
+        /* 名前入力：タップした瞬間にフォーカス（iOSキーボード用） */
+        const focusNameInput = (e) => {
+            if (e) e.stopPropagation();
+            try {
+                el.spiritName.focus({ preventScroll: true });
+            } catch (_) {
+                try { el.spiritName.focus(); } catch (__) { /* ignore */ }
+            }
+        };
+        el.spiritName.addEventListener('pointerdown', focusNameInput);
+        el.spiritName.addEventListener('touchstart', focusNameInput, { passive: true });
         el.spiritName.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -1777,10 +1823,18 @@
             }
         });
 
-        el.slot1.addEventListener('click', () => {
+        el.slot1.addEventListener('pointerdown', () => {
             if (gameState.selectedColors[0]) clearSlot(0);
         });
-        el.slot2.addEventListener('click', () => {
+        el.slot2.addEventListener('pointerdown', () => {
+            if (gameState.selectedColors[1]) clearSlot(1);
+        });
+        el.slot1.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (gameState.selectedColors[0]) clearSlot(0);
+        });
+        el.slot2.addEventListener('click', (e) => {
+            e.preventDefault();
             if (gameState.selectedColors[1]) clearSlot(1);
         });
 
