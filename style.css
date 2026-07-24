@@ -356,7 +356,7 @@ input {
     grid-template-rows: repeat(4, minmax(0, 1fr));
     gap: 6px;
     overflow: hidden;
-    touch-action: none;
+    touch-action: manipulation;
     overscroll-behavior: none;
 }
 
@@ -364,6 +364,10 @@ input {
     aspect-ratio: auto;
     height: 100%;
     min-height: 0;
+    touch-action: manipulation;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 #basicColors .spirit-item.is-empty {

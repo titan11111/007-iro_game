@@ -1310,8 +1310,21 @@
         nameSpan.style.color = textColorForRgb(spirit.rgb);
         btn.appendChild(nameSpan);
 
-        btn.addEventListener('click', () => {
+        /* iOSで touchend preventDefault により click が消える対策: pointerup を主、click は保険 */
+        let lastPickAt = 0;
+        const pick = () => {
+            const now = Date.now();
+            if (now - lastPickAt < 280) return;
+            lastPickAt = now;
             addSelectedColor(spirit);
+        };
+        btn.addEventListener('pointerup', (e) => {
+            if (e.button != null && e.button !== 0) return;
+            pick();
+        });
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            pick();
         });
 
         return btn;
@@ -1680,11 +1693,15 @@
         document.addEventListener('gestureend', (e) => e.preventDefault());
 
         const blockDoubleTapZoom = (e) => {
+            /* touchend のみ。同一タップの start→end で click を潰さない */
             const now = Date.now();
-            if (now - lastTouchEnd <= 300) e.preventDefault();
+            if (now - lastTouchEnd <= 300) {
+                const tag = e.target && e.target.tagName;
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                e.preventDefault();
+            }
             lastTouchEnd = now;
         };
-        document.addEventListener('touchstart', blockDoubleTapZoom, { passive: false });
         document.addEventListener('touchend', blockDoubleTapZoom, { passive: false });
 
         document.addEventListener('visibilitychange', () => {
