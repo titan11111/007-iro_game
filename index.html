@@ -2,65 +2,109 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <title>色育成図鑑ゲーム</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
-        <header>
-            <h1>🎨 色育成図鑑ゲーム 🎨</h1>
-            <p>油絵具の精霊を育てよう！</p>
-        </header>
-
-        <main>
-            <section class="basic-colors">
-                <h2>基本の精霊たち</h2>
-                <div class="color-grid" id="basicColors">
-                    </div>
-            </section>
-
-            <section class="mixing-area">
-                <h2>混色実験</h2>
-                <div class="mix-container">
-                    <div class="color-slot" id="slot1">
-                        <span>精霊1をドロップ</span>
-                    </div>
-                    <div class="mix-symbol">+</div>
-                    <div class="color-slot" id="slot2">
-                        <span>精霊2をドロップ</span>
-                    </div>
-                    <div class="mix-symbol">=</div>
-                    <div class="result-slot" id="resultSlot">
-                        <span>？</span>
-                    </div>
-                </div>
-                <button id="mixButton" disabled>混色実験開始！</button>
-            </section>
-
-            <section class="god-display" id="godDisplay" style="display: none;">
-                <h2 id="godName"></h2>
-            </section>
-
-            <section class="result-area" id="resultArea" style="display: none;">
-                <h2>新しい精霊が生まれました！</h2>
-                <div class="new-spirit">
-                    <div class="spirit-color" id="newSpiritColor"></div>
-                    <p>この精霊に名前をつけてあげよう！</p>
-                    <input type="text" id="spiritName" placeholder="精霊の名前を入力">
-                    <button id="nameButton">名前を決定</button>
-                </div>
-            </section>
-
-            <section class="collection">
-                <h2>精霊図鑑</h2>
-                <div class="collection-grid" id="collectionGrid">
-                    </div>
-            </section>
-        </main>
+    <div id="startOverlay" class="start-overlay" role="dialog" aria-modal="true" aria-label="開始">
+        <div class="start-card">
+            <h1>色育成図鑑</h1>
+            <p class="start-lead">2色を混ぜて精霊を育てる</p>
+            <button type="button" id="startButton" class="game-btn primary">TAP TO START</button>
+        </div>
     </div>
 
-    <audio id="bgm" src="audio/madobe.mp3" loop></audio>
+    <div class="app">
+        <header class="topbar">
+            <div class="topbar-text">
+                <h1>色育成図鑑</h1>
+                <p id="statusText">精霊を選んで混ぜよう</p>
+            </div>
+            <button type="button" id="muteButton" class="icon-btn" aria-label="ミュート切替" aria-pressed="false">🔊</button>
+        </header>
+
+        <section class="mix" aria-label="混色">
+            <div class="mix-row">
+                <button type="button" class="slot-unit" id="slot1" aria-label="精霊スロット1">
+                    <span class="slot-swatch"></span>
+                    <span class="slot-label">精霊1</span>
+                </button>
+                <span class="mix-op" aria-hidden="true">+</span>
+                <button type="button" class="slot-unit" id="slot2" aria-label="精霊スロット2">
+                    <span class="slot-swatch"></span>
+                    <span class="slot-label">精霊2</span>
+                </button>
+                <span class="mix-op" aria-hidden="true">=</span>
+                <div class="slot-unit result-unit" id="resultSlot" aria-live="polite">
+                    <span class="result-slot"><span>？</span></span>
+                    <span class="slot-label">結果</span>
+                </div>
+            </div>
+            <div class="mix-actions">
+                <button type="button" id="clearSlots" class="game-btn ghost">クリア</button>
+                <button type="button" id="mixButton" class="game-btn primary" disabled>混色する</button>
+            </div>
+        </section>
+
+        <nav class="tabs" aria-label="表示切替">
+            <button type="button" class="tab is-on" data-tab="palette" id="tabPalette">パレット</button>
+            <button type="button" class="tab" data-tab="book" id="tabBook">図鑑 <span id="collectionCount" class="count">0</span></button>
+        </nav>
+
+        <section class="panel is-on" id="panelPalette" aria-label="パレット">
+            <div class="spirit-grid" id="basicColors"></div>
+        </section>
+
+        <section class="panel" id="panelBook" aria-label="精霊図鑑" hidden>
+            <div class="spirit-grid" id="collectionGrid"></div>
+        </section>
+    </div>
+
+    <div id="nameRitual" class="modal-overlay" hidden>
+        <div class="name-card" role="dialog" aria-modal="true" aria-label="名前をつける">
+            <div class="spirit-swatch birth-swatch" id="ritualColor" aria-hidden="true"></div>
+            <p class="sheet-parents" id="ritualParents"></p>
+            <label class="sr-only" for="spiritName">精霊の名前</label>
+            <input
+                type="text"
+                id="spiritName"
+                maxlength="20"
+                placeholder="名前をつける"
+                inputmode="text"
+                enterkeyhint="done"
+                autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                lang="ja"
+            >
+            <div class="sheet-actions">
+                <button type="button" id="nameCancel" class="game-btn secondary">やめる</button>
+                <button type="button" id="nameButton" class="game-btn primary">授ける</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailSheet" class="modal-overlay" hidden>
+        <div class="name-card" role="dialog" aria-modal="true" aria-labelledby="detailName">
+            <div class="spirit-swatch" id="detailColor" aria-hidden="true"></div>
+            <h2 id="detailName" class="detail-title">精霊</h2>
+            <p class="sheet-parents" id="detailParents"></p>
+            <p class="sheet-meta" id="detailRgb"></p>
+            <div class="sheet-actions">
+                <button type="button" id="detailClose" class="game-btn secondary">閉じる</button>
+                <button type="button" id="detailUse" class="game-btn primary">混ぜる</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <audio id="bgm" src="audio/madobe.m4a" loop preload="none"></audio>
     <script src="script.js"></script>
 </body>
 </html>
